@@ -2,6 +2,7 @@ module Main where
 import System.Environment (getArgs)
 import System.IO
 import System.Process
+import GitRunner
 
 data SourceConfig = SourceConfig { rootDir :: FilePath }
 

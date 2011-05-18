@@ -46,8 +46,9 @@ Cabal-version:       >=1.2
 
 Executable irt
   -- .hs or .lhs file containing the Main module.
-  Main-is: src/irt.hs            
-  
+  Main-is: irt.hs            
+  hs-source-dirs:   src
+
   -- Packages needed in order to build this package.
   Build-depends: base,
                  process
