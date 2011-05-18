@@ -31,9 +31,7 @@ gitIsDirtyTree repo = do
   runGit repo GitUpdateIndexCmd
   output <- runGit repo GitDiffIndexNamesCmd
   let changedFiles = length output
-  if changedFiles > 0
-    then return True
-    else return False
+  return (changedFiles > 0)
 
 runGit :: GitRepo -> GitCommand -> IO String
 runGit repo command = do
