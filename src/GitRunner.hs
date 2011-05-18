@@ -14,6 +14,7 @@ data GitCommand = GitRevisionInfoCmd
                 | GitUpdateIndexCmd
                 | GitDiffIndexNamesCmd
 
+gitCommandArgs :: GitCommand -> [String]
 gitCommandArgs GitUpdateIndexCmd = ["update-index", "-q", "--refresh"]
 gitCommandArgs GitDiffIndexNamesCmd = ["diff-index", "--name-only", "HEAD", "--"]
 gitCommandArgs GitRevisionInfoCmd = ["describe", "--tags"]
