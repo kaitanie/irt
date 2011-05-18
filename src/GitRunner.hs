@@ -13,6 +13,7 @@ data GitRepo = GitRepo { gitRepoPath :: FilePath
 data GitCommand = GitRevisionInfoCmd
                 | GitUpdateIndexCmd
                 | GitDiffIndexNamesCmd
+                deriving (Show, Eq)
 
 gitCommandArgs :: GitCommand -> [String]
 gitCommandArgs GitUpdateIndexCmd = ["update-index", "-q", "--refresh"]
