@@ -13,9 +13,16 @@ data SourceTransform = FileTransform { transformFileName :: FilePath
                        deriving (Show, Eq)
 
 getGitRevisionInfo = do
-  (_, Just gitOutputStream, _, _) <- createProcess (proc "git" ["describe"]) {std_out = CreatePipe }
-  gitRevision <- hGetContents gitOutputStream
-  return gitRevision
+  (_, Just gitDescribeOutputStream, _, _) <- createProcess (proc "git" ["describe", "--tags"]) {std_out = CreatePipe }
+  createProcess (proc "git" ["update-index", "-q", "--refresh"])
+  (_, Just gitDiffIndexStream, _, _) <-createProcess (proc "git" ["diff-index", "--name-only", "HEAD", "--"]) {std_out = CreatePipe }
+  gitRevision <- hGetContents gitDescribeOutputStream
+  gitDiffIndex <- hGetContents gitDiffIndexStream
+  let treeIsDirty = length (lines gitDiffIndex) > 0
+      trimmedRevision = init gitRevision
+  if treeIsDirty
+    then return (trimmedRevision ++ "-dirty")
+    else return trimmedRevision
 
 parseConfig = undefined
 
