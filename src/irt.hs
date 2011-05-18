@@ -30,7 +30,9 @@ parseConfig = undefined
 performCommand = undefined
 
 usage = do
-  rev <- getGitRevisionInfo
+  let thisRepo = GitRepo "./"
+  rev <- buildGitRevisionString thisRepo
+--  rev <- getGitRevisionInfo
   putStrLn ("usage: irt version " ++ rev ++ " command [args]")
   putStrLn "Commands: help, release"
 
