@@ -51,7 +51,8 @@ Executable irt
 
   -- Packages needed in order to build this package.
   Build-depends: base,
-                 process
+                 process,
+                 cmdargs
   
   -- Modules not exported by this package.
   -- Other-modules:       
