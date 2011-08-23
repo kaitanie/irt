@@ -54,6 +54,8 @@ Executable irt
                  process,
                  cmdargs
   
+  Ghc-options: -O2 -Wall
+
   -- Modules not exported by this package.
   -- Other-modules:       
   
