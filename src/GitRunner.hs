@@ -53,5 +53,5 @@ runGit repo command = do
       return (ExitSuccess, trimmedOutput)
     (ExitFailure errorCode) -> do
       gitErrorStr  <- hGetContents gitErrorStream
-      let msg = "Git failed with code " ++ (show errorCode) ++ "\n" ++ gitErrorStr
+      let msg = "Git failed with code " ++ (show errorCode) ++ " and message:\n" ++ gitErrorStr
       return (exitCode, msg)

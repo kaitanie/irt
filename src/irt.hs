@@ -1,12 +1,14 @@
 {-# LANGUAGE DeriveDataTypeable, RecordWildCards, NamedFieldPuns #-}
 module Main where
 import System.Environment (getArgs)
+import System.FilePath
 import System.IO
 import System.Process
 import System.Console.CmdArgs
 import GitRunner
+import G4Release
 
-data CmdOptions = AboutIncl {
+data CmdOptions = AboutIrt {
                             }
                 | G4Release { gitRepositoryPath :: String
                             , ignoreGitModifications :: Bool
@@ -32,21 +34,25 @@ g4release = G4Release { gitRepositoryPath = def &= help "INCL++ Git repository p
                       , geant4SourcePath = def &= help "Geant4 checkout (main level)"
                       }  &= help "Release INCL++ to Geant4"
 
-info = AboutIncl {} &= help "Help"
+info = AboutIrt {} &= help "Help"
 
 mode = cmdArgsMode $ modes [info,g4release] &= help "Make an INCL release" &= program "irt" &= summary "irt v0.1"
 
 abortG4Release = do
   putStrLn "Error! Git tree must not contain uncommitted changes!"
 
-performG4Release conf = undefined
---performG4Release conf = do
---  srcs <- collectF
---  srcs <- filterSource conf
-  
+performG4Release repo targetDir = do
+  let inclDir = gitRepoPath repo
+  g4inclxxUtilsModule <- mkModuleDefinition inclDir "utils" []
+  g4inclxxPhysicsModule <- mkModuleDefinition inclDir "incl_physics" [g4inclxxUtilsModule]
+  g4inclxxInterfaceModule <- mkModuleDefinition inclDir "interface" [g4inclxxUtilsModule, g4inclxxPhysicsModule]
+  let g4modules = [g4inclxxUtilsModule, g4inclxxPhysicsModule, g4inclxxInterfaceModule]
+  releaseG4 repo targetDir g4modules
 
+runIrtCommand :: CmdOptions -> IO ()
 runIrtCommand conf@(G4Release gitpath ignoregitmodif g4sourcepath) = do
   let inclRepository = GitRepo gitpath
+      targetDir = g4sourcepath </> "source/processes/hadronic/models/inclxx/"
   inclDirtyTree <- gitIsDirtyTree inclRepository
   inclRev <- buildGitRevisionString inclRepository
   putStrLn $ "INCL++ repository path is: " ++ gitpath
@@ -54,12 +60,13 @@ runIrtCommand conf@(G4Release gitpath ignoregitmodif g4sourcepath) = do
   putStrLn $ "Geant4 path is: " ++ g4sourcepath
   if inclDirtyTree && (not ignoregitmodif)
     then abortG4Release
-    else performG4Release conf
+    else performG4Release inclRepository targetDir
 
---runIrtCommand :: CmdOptions -> IO ()
---runIrtCommand G4Release{..} = undefined
---runIrtCommand _ = undefined
+runIrtCommand AboutIrt = do
+  putStrLn "About irt"
 
+main :: IO ()
 main = do
   conf <- cmdArgsRun mode
   runIrtCommand conf
+
