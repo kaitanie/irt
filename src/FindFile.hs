@@ -6,7 +6,7 @@ module FindFile ( getRecursiveContents
 
 import Control.Monad (forM)
 import System.Directory (doesDirectoryExist, getDirectoryContents)
-import System.FilePath ((</>), takeExtension, takeFileName)
+import System.FilePath ((</>), takeExtension)
 
 getRecursiveContents :: FilePath -> IO [FilePath]
 getRecursiveContents topdir = do

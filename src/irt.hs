@@ -1,9 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable, RecordWildCards, NamedFieldPuns #-}
 module Main where
-import System.Environment (getArgs)
 import System.FilePath
-import System.IO
-import System.Process
 import System.Console.CmdArgs
 import GitRunner
 import G4Release
@@ -25,22 +22,23 @@ data SourceTransform = FileTransform { transformFileName :: FilePath
                                      }
                        deriving (Show, Eq)
 
-parseConfig = undefined
-
-performCommand = undefined
-
+g4release :: CmdOptions
 g4release = G4Release { gitRepositoryPath = def &= help "INCL++ Git repository path"
                       , ignoreGitModifications = False &= help "Ignore modifications in the Git tree"
                       , geant4SourcePath = def &= help "Geant4 checkout (main level)"
                       }  &= help "Release INCL++ to Geant4"
 
+info :: CmdOptions
 info = AboutIrt {} &= help "Help"
 
+mode :: Mode (CmdArgs CmdOptions)
 mode = cmdArgsMode $ modes [info,g4release] &= help "Make an INCL release" &= program "irt" &= summary "irt v0.1"
 
+abortG4Release :: IO ()
 abortG4Release = do
   putStrLn "Error! Git tree must not contain uncommitted changes!"
 
+performG4Release :: GitRepo -> FilePath -> IO ()
 performG4Release repo targetDir = do
   let inclDir = gitRepoPath repo
   g4inclxxUtilsModule <- mkModuleDefinition inclDir "utils" []
@@ -50,7 +48,7 @@ performG4Release repo targetDir = do
   releaseG4 repo targetDir g4modules
 
 runIrtCommand :: CmdOptions -> IO ()
-runIrtCommand conf@(G4Release gitpath ignoregitmodif g4sourcepath) = do
+runIrtCommand (G4Release gitpath ignoregitmodif g4sourcepath) = do
   let inclRepository = GitRepo gitpath
       targetDir = g4sourcepath </> "source/processes/hadronic/models/inclxx/"
   inclDirtyTree <- gitIsDirtyTree inclRepository

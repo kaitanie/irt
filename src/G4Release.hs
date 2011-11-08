@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes, KindSignatures #-}
 module G4Release (
   G4Module(..),
   mkModuleDefinition,
@@ -7,7 +8,6 @@ module G4Release (
 
 import System.FilePath
 import System.Directory
-import System.IO
 import FindFile
 import GitRunner
 import SedRunner
@@ -20,11 +20,11 @@ data G4Module = G4Module {
   g4moduleGlobalDependencies :: [String]
   } deriving (Show, Eq)
 
-identityTransform :: String -> IO String
-identityTransform code = do
-  return code
+-- identityTransform :: String -> IO String
+-- identityTransform code = do
+--   return code
 
---releaseG4 :: GitRepo -> FilePath -> [G4Module] -> IO ()
+releaseG4 :: GitRepo -> FilePath -> [G4Module] -> IO ()
 releaseG4 repo targetdir modules = do
 --  let transformFn code = (useG4Types code) >>= (appendRevisionInfo repo) >>= (appendLicense licenseBoilerplate)
   let transformFn code = (useG4Types code) >>= appendDefines >>= (appendRevisionInfo repo) >>= (appendLicense licenseBoilerplate)
@@ -41,7 +41,7 @@ releaseFile destinationDir transform file = do
       targetFileName = destinationDir </> fileName
   writeFile targetFileName code'
 
---releaseModule :: FilePath -> (String -> IO String) -> G4Module -> IO ()
+releaseModule :: FilePath -> (String -> IO String) -> G4Module -> IO ()
 releaseModule targetRootDir transform g4module = do
   createDirectoryIfMissing True targetRootDir
   let modName = g4moduleName g4module
@@ -55,12 +55,14 @@ releaseModule targetRootDir transform g4module = do
   mapM_ (releaseFile (targetRootDir </> modName </> "include") transform) headers
   mapM_ (releaseFile (targetRootDir </> modName </> "src") transform) sources
 
+createCMakeSources :: forall t (m :: * -> *) a. Monad m => t -> G4Module -> a -> m a
 createCMakeSources targetRootDir g4module = do
   let modname = g4moduleName g4module
       libname = "G4hadronic_inclxx" ++ modname
       cmakeSources = toCMakeSources g4module
   return
 
+createGNUmakefile :: FilePath -> G4Module -> FilePath -> String -> IO ()
 createGNUmakefile targetRootDir g4module = do
   let name = g4moduleName g4module
       fname = targetRootDir </> name </> "GNUmakefile"
@@ -70,10 +72,12 @@ createGNUmakefile targetRootDir g4module = do
 
 -- Build system boilerplate
 
+gnumakefileHeader :: String
 gnumakefileHeader = "#-----------------------------------------------------------\n\
 \# GNUmakefile for INCL++.  Pekka Kaitaniemi (26.08.2011).\n\
 \# -----------------------------------------------------------\n"
 
+gnumakefileBody :: String
 gnumakefileBody = "CPPFLAGS += -I$(G4BASE)/global/management/include \\n\
 \             -I$(G4BASE)/global/HEPRandom/include \\n\
 \             -I$(G4BASE)/global/HEPGeometry/include \\n\
@@ -121,6 +125,7 @@ appendRevisionInfo repo code = do
       code' = unlines combinedTexts
   return code'
 
+licenseBoilerplate :: String
 licenseBoilerplate = "//\n\
 \// ********************************************************************\n\
 \// * License and Disclaimer                                           *\n\
@@ -156,9 +161,11 @@ licenseBoilerplate = "//\n\
 
 -- G4 build system code generator
 
+defaultGlobDeps :: [String]
 defaultGlobDeps = ["G4geometry", "G4global", "G4materials",
                    "G4particles", "G4track"]
 
+defaultGranDeps :: [String]
 defaultGranDeps = ["G4baryons", "G4bosons", "G4geometrymng",
                    "G4globman", "G4hadronic_mgt", "G4hadronic_util",
                    "G4hadronic_xsect", "G4ions", "G4leptons",
@@ -176,11 +183,14 @@ mkModuleDefinition basedir pkgname granularDeps = do
       newModule = G4Module name headers sources granDeps globDeps
   return newModule
 
+indentation :: String
 indentation = "   "
 
+concatStrsToLines :: String -> String -> String
 concatStrsToLines "" s = indentation ++ s
 concatStrsToLines acc s = acc ++ "\n" ++ indentation ++ s
 
+combineStrListToLines :: [String] -> String
 combineStrListToLines l = foldl concatStrsToLines "" l
 
 toCMakeSources :: G4Module -> String
@@ -196,6 +206,7 @@ toCMakeSources m = sourcesCMakeHeader ++ moduleDefStr
         moduleNameDefStr = "GEANT4_DEFINE_MODULE(NAME " ++ libName ++ "\n"
         moduleEndStr = "\n)\n"
 
+sourcesCMakeHeader :: String
 sourcesCMakeHeader = "#-----------------\
 \-------------------------------------------------------------\n\
 \# sources.cmake\n\

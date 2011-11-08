@@ -17,6 +17,7 @@ data SedCommand = SedIntToG4Int
                 deriving (Show, Eq)
 
 --toG4TypeRegexp t = ["\\'s/\\b\\(" ++ t ++"\\)\\b/G4\\1/g\'"]
+toG4TypeRegexp :: String -> [String]
 toG4TypeRegexp t = ["s/" ++ t ++ "/G4" ++ t ++ "/g"]
 
 --let substitute x y s = subRegex (mkRegex x) s y
@@ -45,8 +46,8 @@ useG4Double = runSed SedDoubleToG4Double
 useG4Bool :: String -> IO String
 useG4Bool = runSed SedBoolToG4Bool
 
-commentAsserts :: String -> IO String
-commentAsserts = runSed SedCommentAsserts
+-- commentAsserts :: String -> IO String
+-- commentAsserts = runSed SedCommentAsserts
 
 fixG4G4 :: String -> IO String
 fixG4G4 = runSed SedFixG4G4
