@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, RecordWildCards, NamedFieldPuns #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 module Main where
 import System.FilePath
 import System.Console.CmdArgs
