@@ -29,7 +29,7 @@ sedCommandArgs SedIntToG4Int = ["s/int/G4int/g"]
 sedCommandArgs SedFloatToG4Float = toG4TypeRegexp "float"
 sedCommandArgs SedDoubleToG4Double = toG4TypeRegexp "double"
 sedCommandArgs SedBoolToG4Bool = toG4TypeRegexp "bool"
-sedCommandArgs SedCommentAsserts = ["s/assert/\\/\\/ assert/g"]
+sedCommandArgs SedCommentAsserts = ["s/^ *assert/\\/\\/ assert/g"]
 sedCommandArgs SedFixG4G4 = ["s/G4G4/G4/g"]
 sedCommandArgs SedFixUnsignedG4Int = ["s/unsigned\\ G4int/unsigned\\ int/g"]
 sedCommandArgs SedFixG4boolalpha = ["s/G4boolalpha/boolalpha/g"]
@@ -46,8 +46,8 @@ useG4Double = runSed SedDoubleToG4Double
 useG4Bool :: String -> IO String
 useG4Bool = runSed SedBoolToG4Bool
 
--- commentAsserts :: String -> IO String
--- commentAsserts = runSed SedCommentAsserts
+commentAsserts :: String -> IO String
+commentAsserts = runSed SedCommentAsserts
 
 fixG4G4 :: String -> IO String
 fixG4G4 = runSed SedFixG4G4
