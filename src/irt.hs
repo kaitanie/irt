@@ -34,7 +34,7 @@ info :: CmdOptions
 info = AboutIrt {} &= help "Help"
 
 mode :: Mode (CmdArgs CmdOptions)
-mode = cmdArgsMode $ modes [info,g4release] &= help "Make an INCL release" &= program "irt" &= summary "irt v0.1"
+mode = cmdArgsMode $ modes [info,g4release] &= help "Make an INCL release" &= program "irt" &= summary "irt v0.3"
 
 abortG4Release :: IO ()
 abortG4Release = do
