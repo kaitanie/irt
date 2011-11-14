@@ -27,7 +27,7 @@ g4release :: CmdOptions
 g4release = G4Release { gitRepo = def &= help "INCL++ Git repository path"
                       , ignoreGitModifications = False &= help "Ignore modifications in the Git tree"
                       , g4Tree = def &= help "Geant4 checkout (main level)"
-                      , g4options = [] &= help "Geant4 release options"
+                      , g4options = [] &= help "(AllowAssert, NoG4Types, NoLicense, NoRevisionInfo)"
                       }  &= help "Release INCL++ to Geant4"
 
 info :: CmdOptions
