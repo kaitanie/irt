@@ -1,5 +1,6 @@
 module SedRunner (
-  useG4Types
+  useG4Types,
+  disableAssertions
   ) where
 
 import System.IO
@@ -11,6 +12,7 @@ data SedCommand = SedIntToG4Int
                 | SedDoubleToG4Double
                 | SedBoolToG4Bool
                 | SedCommentAsserts
+                | SedCommentIncludeCassert
                 | SedFixG4G4
                 | SedFixUnsignedG4Int
                 | SedFixG4boolalpha
@@ -30,6 +32,7 @@ sedCommandArgs SedFloatToG4Float = toG4TypeRegexp "float"
 sedCommandArgs SedDoubleToG4Double = toG4TypeRegexp "double"
 sedCommandArgs SedBoolToG4Bool = toG4TypeRegexp "bool"
 sedCommandArgs SedCommentAsserts = ["s/^ *assert/\\/\\/ assert/g"]
+sedCommandArgs SedCommentIncludeCassert = ["s/#include \\+<cassert>/\\/\\/ #include <cassert>/g"]
 sedCommandArgs SedFixG4G4 = ["s/G4G4/G4/g"]
 sedCommandArgs SedFixUnsignedG4Int = ["s/unsigned\\ G4int/unsigned\\ int/g"]
 sedCommandArgs SedFixG4boolalpha = ["s/G4boolalpha/boolalpha/g"]
@@ -48,6 +51,12 @@ useG4Bool = runSed SedBoolToG4Bool
 
 commentAsserts :: String -> IO String
 commentAsserts = runSed SedCommentAsserts
+
+commentIncludeCassert :: String -> IO String
+commentIncludeCassert = runSed SedCommentIncludeCassert
+
+disableAssertions :: String -> IO String
+disableAssertions code = (commentAsserts code) >>= commentIncludeCassert
 
 fixG4G4 :: String -> IO String
 fixG4G4 = runSed SedFixG4G4

@@ -27,7 +27,7 @@ data G4Module = G4Module {
 releaseG4 :: GitRepo -> FilePath -> [G4Module] -> IO ()
 releaseG4 repo targetdir modules = do
 --  let transformFn code = (useG4Types code) >>= (appendRevisionInfo repo) >>= (appendLicense licenseBoilerplate)
-  let transformFn code = (useG4Types code) >>= appendDefines >>= (appendRevisionInfo repo) >>= (appendLicense licenseBoilerplate)
+  let transformFn code = (useG4Types code) >>= disableAssertions >>= appendDefines >>= (appendRevisionInfo repo) >>= (appendLicense licenseBoilerplate)
 --  let transformFn code = (appendDefines code) >>= (appendRevisionInfo repo) >>= (appendLicense licenseBoilerplate)
       releaseFn = releaseModule targetdir transformFn
   mapM_ releaseFn modules
