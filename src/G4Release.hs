@@ -23,10 +23,10 @@ data G4Module = G4Module {
   g4moduleGlobalDependencies :: [String]
   } deriving (Show, Eq)
 
-data G4ReleaseOption = DisableAssertElimination
-                     | DisableG4Types
-                     | DisableLicense
-                     | DisableRevisionInfo
+data G4ReleaseOption = AllowAssert
+                     | NoG4Types
+                     | NoLicense
+                     | NoRevisionInfo
                      deriving (Show, Eq, Data, Typeable)
 
 identityTransform :: String -> IO String
@@ -36,16 +36,16 @@ identityTransform code = do
 transformFn :: [G4ReleaseOption] -> GitRepo -> String -> IO String
 transformFn g4options repo code =
   let initialTransform = identityTransform code >>= appendDefines
-      typeTransform = case elem DisableG4Types g4options of
+      typeTransform = case elem NoG4Types g4options of
         True -> identityTransform
         False -> useG4Types
-      licenseInfoTransform = case elem DisableLicense g4options of
+      licenseInfoTransform = case elem NoLicense g4options of
         True -> identityTransform
         False -> (appendLicense licenseBoilerplate)
-      revisionInfoTransform = case elem DisableRevisionInfo g4options of
+      revisionInfoTransform = case elem NoRevisionInfo g4options of
         True -> identityTransform
         False -> (appendRevisionInfo repo)
-      assertEliminationTransform = case elem DisableAssertElimination g4options of
+      assertEliminationTransform = case elem AllowAssert g4options of
         True -> identityTransform
         False -> disableAssertions
   in initialTransform >>= typeTransform >>= assertEliminationTransform >>= revisionInfoTransform >>= licenseInfoTransform
