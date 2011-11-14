@@ -7,10 +7,10 @@ import G4Release
 
 data CmdOptions = AboutIrt {
                             }
-                | G4Release { gitRepositoryPath :: String
+                | G4Release { gitRepo :: String
                             , ignoreGitModifications :: Bool
                             , g4options :: [G4ReleaseOption]
-                            , geant4SourcePath :: String
+                            , g4Tree :: String
                             }
                 deriving (Show, Eq, Data, Typeable)
 
@@ -24,9 +24,9 @@ data SourceTransform = FileTransform { transformFileName :: FilePath
                        deriving (Show, Eq)
 
 g4release :: CmdOptions
-g4release = G4Release { gitRepositoryPath = def &= help "INCL++ Git repository path"
+g4release = G4Release { gitRepo = def &= help "INCL++ Git repository path"
                       , ignoreGitModifications = False &= help "Ignore modifications in the Git tree"
-                      , geant4SourcePath = def &= help "Geant4 checkout (main level)"
+                      , g4Tree = def &= help "Geant4 checkout (main level)"
                       , g4options = [] &= help "Geant4 release options"
                       }  &= help "Release INCL++ to Geant4"
 
