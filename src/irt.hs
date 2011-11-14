@@ -41,16 +41,16 @@ abortG4Release = do
   putStrLn "Error! Git tree must not contain uncommitted changes!"
 
 performG4Release :: GitRepo -> FilePath -> [G4ReleaseOption] -> IO ()
-performG4Release repo targetDir g4options = do
+performG4Release repo targetDir g4opts = do
   let inclDir = gitRepoPath repo
   g4inclxxUtilsModule <- mkModuleDefinition inclDir "utils" []
   g4inclxxPhysicsModule <- mkModuleDefinition inclDir "incl_physics" [g4inclxxUtilsModule]
   g4inclxxInterfaceModule <- mkModuleDefinition inclDir "interface" [g4inclxxUtilsModule, g4inclxxPhysicsModule]
   let g4modules = [g4inclxxUtilsModule, g4inclxxPhysicsModule, g4inclxxInterfaceModule]
-  releaseG4 repo targetDir g4modules g4options
+  releaseG4 repo targetDir g4modules g4opts
 
 runIrtCommand :: CmdOptions -> IO ()
-runIrtCommand (G4Release gitpath ignoregitmodif g4options g4sourcepath) = do
+runIrtCommand (G4Release gitpath ignoregitmodif g4opts g4sourcepath) = do
   let inclRepository = GitRepo gitpath
       targetDir = g4sourcepath </> "source/processes/hadronic/models/inclxx/"
   inclDirtyTree <- gitIsDirtyTree inclRepository
@@ -58,10 +58,10 @@ runIrtCommand (G4Release gitpath ignoregitmodif g4options g4sourcepath) = do
   putStrLn $ "INCL++ repository path is: " ++ gitpath
   putStrLn $ "INCL++ revision is: " ++ inclRev
   putStrLn $ "Geant4 path is: " ++ g4sourcepath
-  putStrLn $ "G4 release options: " ++ (show g4options)
+  putStrLn $ "G4 release options: " ++ (show g4opts)
   if inclDirtyTree && (not ignoregitmodif)
     then abortG4Release
-    else performG4Release inclRepository targetDir g4options
+    else performG4Release inclRepository targetDir g4opts
 
 runIrtCommand AboutIrt = do
   putStrLn "About irt"
