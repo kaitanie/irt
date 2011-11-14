@@ -1,6 +1,7 @@
-{-# LANGUAGE RankNTypes, KindSignatures #-}
+{-# LANGUAGE RankNTypes, KindSignatures, DeriveDataTypeable #-}
 module G4Release (
   G4Module(..),
+  G4ReleaseOption(..),
   mkModuleDefinition,
   toCMakeSources,
   releaseG4
@@ -11,6 +12,8 @@ import System.Directory
 import FindFile
 import GitRunner
 import SedRunner
+import Data.Typeable
+import Data.Data
 
 data G4Module = G4Module {
   g4moduleName :: String,
@@ -20,16 +23,37 @@ data G4Module = G4Module {
   g4moduleGlobalDependencies :: [String]
   } deriving (Show, Eq)
 
--- identityTransform :: String -> IO String
--- identityTransform code = do
---   return code
+data G4ReleaseOption = DisableAssertElimination
+                     | DisableG4Types
+                     | DisableLicense
+                     | DisableRevisionInfo
+                     deriving (Show, Eq, Data, Typeable)
 
-releaseG4 :: GitRepo -> FilePath -> [G4Module] -> IO ()
-releaseG4 repo targetdir modules = do
---  let transformFn code = (useG4Types code) >>= (appendRevisionInfo repo) >>= (appendLicense licenseBoilerplate)
-  let transformFn code = (useG4Types code) >>= appendDefines >>= (appendRevisionInfo repo) >>= (appendLicense licenseBoilerplate)
---  let transformFn code = (appendDefines code) >>= (appendRevisionInfo repo) >>= (appendLicense licenseBoilerplate)
-      releaseFn = releaseModule targetdir transformFn
+identityTransform :: String -> IO String
+identityTransform code = do
+  return code
+
+transformFn :: [G4ReleaseOption] -> GitRepo -> String -> IO String
+transformFn g4options repo code =
+  let initialTransform = identityTransform code >>= appendDefines
+      typeTransform = case elem DisableG4Types g4options of
+        True -> identityTransform
+        False -> useG4Types
+      licenseInfoTransform = case elem DisableLicense g4options of
+        True -> identityTransform
+        False -> (appendLicense licenseBoilerplate)
+      revisionInfoTransform = case elem DisableRevisionInfo g4options of
+        True -> identityTransform
+        False -> (appendRevisionInfo repo)
+      assertEliminationTransform = case elem DisableAssertElimination g4options of
+        True -> identityTransform
+        False -> identityTransform
+  in initialTransform >>= typeTransform >>= assertEliminationTransform >>= revisionInfoTransform >>= licenseInfoTransform
+
+releaseG4 :: GitRepo -> FilePath -> [G4Module] -> [G4ReleaseOption] -> IO ()
+releaseG4 repo targetdir modules g4options = do
+  let transform = transformFn g4options repo
+      releaseFn = releaseModule targetdir transform
   mapM_ releaseFn modules
 
 -- Apply transform (String -> IO String) to a code file:
