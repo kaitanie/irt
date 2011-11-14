@@ -47,7 +47,7 @@ transformFn g4options repo code =
         False -> (appendRevisionInfo repo)
       assertEliminationTransform = case elem DisableAssertElimination g4options of
         True -> identityTransform
-        False -> identityTransform
+        False -> disableAssertions
   in initialTransform >>= typeTransform >>= assertEliminationTransform >>= revisionInfoTransform >>= licenseInfoTransform
 
 releaseG4 :: GitRepo -> FilePath -> [G4Module] -> [G4ReleaseOption] -> IO ()
