@@ -1,3 +1,25 @@
-IRT INCL Release Tool
+* IRT INCL Release Tool
+
+** Installation
+
+Irt depends on the following packages: base, process, cmdargs,
+filepath, directory. You can install them by using either cabal or
+your Linux distribution's package management system.
+
+Building irt can be done as follows:
+1. cabal configure --user
+2. cabal build
+This creates program irt in the directory ./dist/biuld/irt.
+
+An alternative way to build irt on Debian systems is to use cabal-debian:
+1. cabal-debian --debianize --maintainer="Your Name <your.email@example.com>"
+2. dpkg-buildpackage
+This creates a Debian .deb package of irt in the parent directory. By doing this you can 
+
+** Example usage:
+
+irt --gitrepo=/path/to/incl-git-repo --g4tree=/path/to/g4/root-dir
+where the G4 source directory is the one that contains the source/
+directory (in addition to some others).
 
 
