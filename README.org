@@ -9,12 +9,16 @@ your Linux distribution's package management system.
 Building irt can be done as follows:
 1. cabal configure --user
 2. cabal build
-This creates program irt in the directory ./dist/biuld/irt.
+This creates program irt in the directory ./dist/biuld/irt. You can
+optionally also use command "cabal install" to install the irt binary
+to ~/.cabal/bin.
 
 An alternative way to build irt on Debian systems is to use cabal-debian:
 1. cabal-debian --debianize --maintainer="Your Name <your.email@example.com>"
 2. dpkg-buildpackage
-This creates a Debian .deb package of irt in the parent directory. By doing this you can 
+This creates a Debian .deb package of irt in the parent directory. By
+doing this you can manage irt binary installation/upgrade/removal
+using the standard package management tools.
 
 ** Example usage:
 
