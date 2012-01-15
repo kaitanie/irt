@@ -19,15 +19,12 @@ data GitCommand = GitRevisionInfoCmd
 gitCommandArgs :: GitCommand -> [String]
 gitCommandArgs GitUpdateIndexCmd = ["update-index", "-q", "--refresh"]
 gitCommandArgs GitDiffIndexNamesCmd = ["diff-index", "--name-only", "HEAD", "--"]
-gitCommandArgs GitRevisionInfoCmd = ["describe", "--tags"]
+gitCommandArgs GitRevisionInfoCmd = ["describe", "--tags", "--dirty"]
 
 buildGitRevisionString :: GitRepo -> IO String
 buildGitRevisionString repo = do
-  isDirty <- gitIsDirtyTree repo
   (_, revStr) <- runGit repo GitRevisionInfoCmd
-  if isDirty
-    then return $ revStr ++ "-dirty"
-    else return revStr
+  return revStr
 
 gitIsDirtyTree :: GitRepo -> IO Bool
 gitIsDirtyTree repo = do
@@ -35,6 +32,10 @@ gitIsDirtyTree repo = do
   (_, output) <- runGit repo GitDiffIndexNamesCmd
   let changedFiles = length output
   return $ changedFiles > 0
+
+concatenateArgs :: [String] -> String
+concatenateArgs [] = []
+concatenateArgs (x:xs) = x ++ " " ++ concatenateArgs xs
 
 runGit :: GitRepo -> GitCommand -> IO (ExitCode, String)
 runGit repo command = do
@@ -53,5 +54,5 @@ runGit repo command = do
       return (ExitSuccess, trimmedOutput)
     (ExitFailure errorCode) -> do
       gitErrorStr  <- hGetContents gitErrorStream
-      let msg = "Git failed with code " ++ (show errorCode) ++ " and message:\n" ++ gitErrorStr
+      let msg = "`git " ++ (concatenateArgs gitArgs) ++ "` failed with code " ++ (show errorCode) ++ " and message:\n" ++ gitErrorStr
       return (exitCode, msg)

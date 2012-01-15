@@ -15,27 +15,24 @@ data SedCommand = SedIntToG4Int
                 | SedCommentIncludeCassert
                 | SedFixG4G4
                 | SedFixUnsignedG4Int
-                | SedFixG4boolalpha
                 deriving (Show, Eq)
 
 --toG4TypeRegexp t = ["\\'s/\\b\\(" ++ t ++"\\)\\b/G4\\1/g\'"]
 toG4TypeRegexp :: String -> [String]
-toG4TypeRegexp t = ["s/" ++ t ++ "/G4" ++ t ++ "/g"]
+toG4TypeRegexp t = ["s/\\(\\b\\)" ++ t ++ "\\(\\b\\)/\\1G4" ++ t ++ "\\2/g"]
 
 --let substitute x y s = subRegex (mkRegex x) s y
 -- substitute "int" "G4int"
 
 sedCommandArgs :: SedCommand -> [String]
-sedCommandArgs SedIntToG4Int = ["s/int/G4int/g"]
---sedCommandArgs SedIntToG4Int = toG4TypeRegexp "int"
+sedCommandArgs SedIntToG4Int = toG4TypeRegexp "int"
 sedCommandArgs SedFloatToG4Float = toG4TypeRegexp "float"
 sedCommandArgs SedDoubleToG4Double = toG4TypeRegexp "double"
 sedCommandArgs SedBoolToG4Bool = toG4TypeRegexp "bool"
-sedCommandArgs SedCommentAsserts = ["s/^ *assert/\\/\\/ assert/g"]
+sedCommandArgs SedCommentAsserts = ["s/^\\s*assert/\\/\\/ assert/g"]
 sedCommandArgs SedCommentIncludeCassert = ["s/#include \\+<cassert>/\\/\\/ #include <cassert>/g"]
 sedCommandArgs SedFixG4G4 = ["s/G4G4/G4/g"]
 sedCommandArgs SedFixUnsignedG4Int = ["s/unsigned\\ G4int/unsigned\\ int/g"]
-sedCommandArgs SedFixG4boolalpha = ["s/G4boolalpha/boolalpha/g"]
 
 useG4Int :: String -> IO String
 useG4Int = runSed SedIntToG4Int
@@ -64,13 +61,10 @@ fixG4G4 = runSed SedFixG4G4
 fixUnsignedG4int :: String -> IO String
 fixUnsignedG4int = runSed SedFixUnsignedG4Int
 
-fixG4boolalpha :: String -> IO String
-fixG4boolalpha = runSed SedFixG4boolalpha
-
 -- Chain the useG4<type> functions together.
 useG4Types :: String -> IO String
 --useG4Types code = (useG4Int code)
-useG4Types code = (useG4Int code) >>= useG4Float >>= useG4Double >>= useG4Bool >>= fixG4G4 >>= fixUnsignedG4int >>= fixG4boolalpha
+useG4Types code = (useG4Int code) >>= useG4Float >>= useG4Double >>= useG4Bool >>= fixG4G4 >>= fixUnsignedG4int
 
 runSed :: SedCommand -> String -> IO String
 runSed command inputData = do
