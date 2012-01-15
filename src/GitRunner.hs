@@ -36,6 +36,10 @@ gitIsDirtyTree repo = do
   let changedFiles = length output
   return $ changedFiles > 0
 
+concatenateArgs :: [String] -> String
+concatenateArgs [] = []
+concatenateArgs (x:xs) = x ++ " " ++ concatenateArgs xs
+
 runGit :: GitRepo -> GitCommand -> IO (ExitCode, String)
 runGit repo command = do
   let gitArgs = gitCommandArgs command
@@ -53,5 +57,5 @@ runGit repo command = do
       return (ExitSuccess, trimmedOutput)
     (ExitFailure errorCode) -> do
       gitErrorStr  <- hGetContents gitErrorStream
-      let msg = "Git failed with code " ++ (show errorCode) ++ " and message:\n" ++ gitErrorStr
+      let msg = "`git " ++ (concatenateArgs gitArgs) ++ "` failed with code " ++ (show errorCode) ++ " and message:\n" ++ gitErrorStr
       return (exitCode, msg)
