@@ -197,8 +197,7 @@ sourcesCMakeEnd = "LINK_LIBRARIES\
 \# List any source specific properties here"
 
 sourcesCMakeHeader :: String
-sourcesCMakeHeader = "#-----------------\
-\-------------------------------------------------------------\n\
+sourcesCMakeHeader = "#------------------------------------------------------------------------------\n\
 \# sources.cmake\n\
 \# Module : G4hadronic_hetcpp_utils\n\
 \# Package: Geant4.src.G4processes.G4hadronic.G4hadronic_models.G4had_hetcpp.G4hadronic_hetcpp_utils\n\
@@ -241,4 +240,3 @@ sourcesCMakeHeader = "#-----------------\
 \# Define the Geant4 Module.\n\
 \#\n\
 \include(Geant4MacroDefineModule)\n"
-
