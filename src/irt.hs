@@ -43,9 +43,9 @@ abortG4Release = do
 performG4Release :: GitRepo -> FilePath -> [G4ReleaseOption] -> IO ()
 performG4Release repo targetDir g4opts = do
   let inclDir = gitRepoPath repo
-  g4inclxxUtilsModule <- mkModuleDefinition inclDir "utils" []
-  g4inclxxPhysicsModule <- mkModuleDefinition inclDir "incl_physics" [g4inclxxUtilsModule]
-  g4inclxxInterfaceModule <- mkModuleDefinition inclDir "interface" [g4inclxxUtilsModule, g4inclxxPhysicsModule]
+  g4inclxxUtilsModule <- mkModuleDefinition inclDir "utils" "utils" []
+  g4inclxxPhysicsModule <- mkModuleDefinition inclDir "incl_physics" "physics" [g4inclxxUtilsModule]
+  g4inclxxInterfaceModule <- mkModuleDefinition inclDir "interface" "interface" [g4inclxxUtilsModule, g4inclxxPhysicsModule]
   let g4modules = [g4inclxxUtilsModule, g4inclxxPhysicsModule, g4inclxxInterfaceModule]
   releaseG4 repo targetDir g4modules g4opts
 

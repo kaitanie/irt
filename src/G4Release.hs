@@ -3,7 +3,6 @@ module G4Release (
   G4Module(..),
   G4ReleaseOption(..),
   mkModuleDefinition,
-  toCMakeSources,
   releaseG4
   ) where
 
@@ -17,6 +16,7 @@ import Data.Data
 
 data G4Module = G4Module {
   g4moduleName :: String,
+  g4moduleDir :: FilePath,
   g4moduleHeaders :: [FilePath],
   g4moduleSources :: [FilePath],
   g4moduleGranularDependencies :: [String],
@@ -69,58 +69,19 @@ releaseModule :: FilePath -> (String -> IO String) -> G4Module -> IO ()
 releaseModule targetRootDir transform g4module = do
   createDirectoryIfMissing True targetRootDir
   let modName = g4moduleName g4module
+      modDir = g4moduleDir g4module
       headers = g4moduleHeaders g4module      
       sources = g4moduleSources g4module      
-  createDirectoryIfMissing True (targetRootDir </> modName </> "include")
-  createDirectoryIfMissing True (targetRootDir </> modName </> "src")
---  createGNUmakefile targetRootDir g4module
---  createCMakeFile targetRootDir g4module
---  createCMakeSources targetRootDir g4module
-  mapM_ (releaseFile (targetRootDir </> modName </> "include") transform) headers
-  mapM_ (releaseFile (targetRootDir </> modName </> "src") transform) sources
+  createDirectoryIfMissing True (targetRootDir </> modDir </> "include")
+  createDirectoryIfMissing True (targetRootDir </> modDir </> "src")
+  mapM_ (releaseFile (targetRootDir </> modDir </> "include") transform) headers
+  mapM_ (releaseFile (targetRootDir </> modDir </> "src") transform) sources
+  createCMakeSources targetRootDir g4module
 
-createCMakeSources :: forall t (m :: * -> *) a. Monad m => t -> G4Module -> a -> m a
-createCMakeSources targetRootDir g4module = do
-  let modname = g4moduleName g4module
-      libname = "G4hadronic_inclxx" ++ modname
-      cmakeSources = toCMakeSources g4module
-  return
-
-createGNUmakefile :: FilePath -> G4Module -> FilePath -> String -> IO ()
-createGNUmakefile targetRootDir g4module = do
-  let name = g4moduleName g4module
-      fname = targetRootDir </> name </> "GNUmakefile"
-      libraryName = "name := G4hadronic_inclxx_" ++ name ++ "\n"
-      content = gnumakefileHeader ++ libraryName ++ gnumakefileBody
-  writeFile 
-
--- Build system boilerplate
-
-gnumakefileHeader :: String
-gnumakefileHeader = "#-----------------------------------------------------------\n\
-\# GNUmakefile for INCL++.  Pekka Kaitaniemi (26.08.2011).\n\
-\# -----------------------------------------------------------\n"
-
-gnumakefileBody :: String
-gnumakefileBody = "CPPFLAGS += -I$(G4BASE)/global/management/include \\n\
-\             -I$(G4BASE)/global/HEPRandom/include \\n\
-\             -I$(G4BASE)/global/HEPGeometry/include \\n\
-\             -I$(G4BASE)/track/include \\n\
-\             -I$(G4BASE)/geometry/volumes/include \\n\
-\             -I$(G4BASE)/geometry/management/include \\n\
-\             -I$(G4BASE)/processes/management/include \\n\
-\             -I$(G4BASE)/processes/hadronic/management/include/ \\n\
-\             -I$(G4BASE)/processes/hadronic/util/include \\n\
-\             -I$(G4BASE)/processes/hadronic/cross_sections/include/ \\n\
-\             -I$(G4BASE)/particles/management/include \\n\
-\             -I$(G4BASE)/particles/leptons/include \\n\
-\             -I$(G4BASE)/particles/bosons/include \\n\
-\             -I$(G4BASE)/particles/hadrons/mesons/include \\n\
-\             -I$(G4BASE)/particles/hadrons/barions/include \\n\
-\             -I$(G4BASE)/particles/hadrons/ions/include \\n\
-\             -I$(G4BASE)/materials/include \\n\
-\\n\
-\/include $(G4INSTALL)/config/common.gmk\n"
+createCMakeSources targetRootDir g4mod = do
+  let sources = generateCMakeSources g4mod
+      fname = targetRootDir </> (g4moduleDir g4mod) </> "sources.cmake"
+  writeFile fname sources
 
 -- Boilerplate to be added to each file
 
@@ -196,19 +157,16 @@ defaultGranDeps = ["G4baryons", "G4bosons", "G4geometrymng",
                    "G4materials", "G4mesons", "G4partman",
                    "G4procman", "G4track", "G4volumes"]
 
-mkModuleDefinition :: FilePath -> String -> [G4Module] -> IO G4Module
-mkModuleDefinition basedir pkgname granularDeps = do
+mkModuleDefinition :: FilePath -> FilePath -> String -> [G4Module] -> IO G4Module
+mkModuleDefinition basedir pkgdir pkgname granularDeps = do
   let  name = pkgname
-  moduleFiles <- getRecursiveContents (basedir </> pkgname)
+  moduleFiles <- getRecursiveContents (basedir </> pkgdir)
   let headers = headerFilesOnly moduleFiles
       sources = sourceFilesOnly moduleFiles
       granDeps = concat [defaultGranDeps, (map g4moduleName granularDeps)]
       globDeps = defaultGlobDeps
-      newModule = G4Module name headers sources granDeps globDeps
+      newModule = G4Module name pkgdir headers sources granDeps globDeps
   return newModule
-
-indentation :: String
-indentation = "   "
 
 concatStrsToLines :: String -> String -> String
 concatStrsToLines "" s = indentation ++ s
@@ -217,18 +175,33 @@ concatStrsToLines acc s = acc ++ "\n" ++ indentation ++ s
 combineStrListToLines :: [String] -> String
 combineStrListToLines l = foldl concatStrsToLines "" l
 
-toCMakeSources :: G4Module -> String
-toCMakeSources m = sourcesCMakeHeader ++ moduleDefStr
-  where moduleDefStr = moduleNameDefStr ++ headerDefs ++ "\n" ++ srcDefs ++ "\n" ++ depDefs ++ moduleEndStr
-        depDefs = granularDefs ++ "\n" ++ globalDefs
-        granularDefs = combineStrListToLines $ g4moduleGranularDependencies m
-        globalDefs = combineStrListToLines $ g4moduleGlobalDependencies m
-        headerDefs = combineStrListToLines $ g4moduleHeaders m
-        srcDefs = combineStrListToLines $ g4moduleSources m
-        moduleName = g4moduleName m
-        libName = "G4hadronic_inclxx" ++ moduleName
-        moduleNameDefStr = "GEANT4_DEFINE_MODULE(NAME " ++ libName ++ "\n"
-        moduleEndStr = "\n)\n"
+generateCMakeSources :: G4Module -> String
+generateCMakeSources g4mod = concat [sourcesCMakeHeader,
+                                     "GEANT4_DEFINE_MODULE(NAME " ++ moduleName ++ "\n",
+                                     headerDefs,
+                                     "\n",
+                                     sourceDefs,
+                                     "\n",
+                                     granularDepDefs,
+                                     "\n",
+                                     globalDepDefs,
+                                     "\n",
+                                     sourcesCMakeEnd]
+  where moduleName = "G4hadronic_inclxx_" ++ (g4moduleName g4mod)
+        appendEndl fname = "        " ++ fname ++ "\n"
+        headerFiles = map takeFileName (g4moduleHeaders g4mod)
+        headerFilesWithEndl = concat $ map appendEndl headerFiles
+        headerDefs = "    HEADERS\n" ++ headerFilesWithEndl
+        sourceFiles = map takeFileName (g4moduleSources g4mod)
+        sourceFilesWithEndl = concat $ map appendEndl sourceFiles
+        sourceDefs = "    SOURCES\n" ++ sourceFilesWithEndl
+        granularDepDefs = "    GRANULAR_DEPENDENCIES\n" ++ (concat (map appendEndl (g4moduleGranularDependencies g4mod)))
+        globalDepDefs = "    GLOBAL_DEPENDENCIES\n" ++ (concat (map appendEndl (g4moduleGlobalDependencies g4mod)))
+
+sourcesCMakeEnd :: String
+sourcesCMakeEnd = "LINK_LIBRARIES\
+\)\
+\# List any source specific properties here"
 
 sourcesCMakeHeader :: String
 sourcesCMakeHeader = "#-----------------\
