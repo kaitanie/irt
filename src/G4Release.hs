@@ -68,8 +68,7 @@ releaseFile destinationDir transform file = do
 releaseModule :: FilePath -> (String -> IO String) -> G4Module -> IO ()
 releaseModule targetRootDir transform g4module = do
   createDirectoryIfMissing True targetRootDir
-  let modName = g4moduleName g4module
-      modDir = g4moduleDir g4module
+  let modDir = g4moduleDir g4module
       headers = g4moduleHeaders g4module      
       sources = g4moduleSources g4module      
   createDirectoryIfMissing True (targetRootDir </> modDir </> "include")
@@ -78,6 +77,7 @@ releaseModule targetRootDir transform g4module = do
   mapM_ (releaseFile (targetRootDir </> modDir </> "src") transform) sources
   createCMakeSources targetRootDir g4module
 
+createCMakeSources :: FilePath -> G4Module -> IO ()
 createCMakeSources targetRootDir g4mod = do
   let sources = generateCMakeSources g4mod
       fname = targetRootDir </> (g4moduleDir g4mod) </> "sources.cmake"
@@ -167,13 +167,6 @@ mkModuleDefinition basedir pkgdir pkgname granularDeps = do
       globDeps = defaultGlobDeps
       newModule = G4Module name pkgdir headers sources granDeps globDeps
   return newModule
-
-concatStrsToLines :: String -> String -> String
-concatStrsToLines "" s = indentation ++ s
-concatStrsToLines acc s = acc ++ "\n" ++ indentation ++ s
-
-combineStrListToLines :: [String] -> String
-combineStrListToLines l = foldl concatStrsToLines "" l
 
 generateCMakeSources :: G4Module -> String
 generateCMakeSources g4mod = concat [sourcesCMakeHeader,
