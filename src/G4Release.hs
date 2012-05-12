@@ -3,7 +3,8 @@ module G4Release (
   G4Module(..),
   G4ReleaseOption(..),
   mkModuleDefinition,
-  releaseG4
+  releaseG4,
+  releaseG4Abla
   ) where
 
 import System.FilePath
@@ -15,6 +16,7 @@ import Data.Typeable
 import Data.Data
 
 data G4Module = G4Module {
+  g4moduleCode :: String,
   g4moduleName :: String,
   g4moduleDir :: FilePath,
   g4moduleHeaders :: [FilePath],
@@ -50,11 +52,24 @@ transformFn g4options repo code =
         False -> disableAssertions
   in initialTransform >>= typeTransform >>= assertEliminationTransform >>= revisionInfoTransform >>= licenseInfoTransform
 
+transformAblaFn :: [G4ReleaseOption] -> GitRepo -> String -> IO String
+transformAblaFn g4options repo code =
+  let initialTransform = identityTransform code >>= appendDefines
+      revisionInfoTransform = case elem NoRevisionInfo g4options of
+        True -> identityTransform
+        False -> (appendRevisionInfo repo)
+  in initialTransform >>= revisionInfoTransform
+
 releaseG4 :: GitRepo -> FilePath -> [G4Module] -> [G4ReleaseOption] -> IO ()
 releaseG4 repo targetdir modules g4options = do
   let transform = transformFn g4options repo
       releaseFn = releaseModule targetdir transform
   mapM_ releaseFn modules
+
+releaseG4Abla :: GitRepo -> FilePath -> G4Module -> [G4ReleaseOption] -> IO ()
+releaseG4Abla repo targetdir g4mod g4options = do
+  let transform = transformAblaFn g4options repo
+  releaseAbla targetdir transform g4mod
 
 -- Apply transform (String -> IO String) to a code file:
 releaseFile :: FilePath -> (String -> IO String) -> FilePath -> IO ()
@@ -75,11 +90,23 @@ releaseModule targetRootDir transform g4module = do
   createDirectoryIfMissing True (targetRootDir </> modDir </> "src")
   mapM_ (releaseFile (targetRootDir </> modDir </> "include") transform) headers
   mapM_ (releaseFile (targetRootDir </> modDir </> "src") transform) sources
-  createCMakeSources targetRootDir g4module
+  createCMakeSources targetRootDir "inclxx" g4module
 
-createCMakeSources :: FilePath -> G4Module -> IO ()
-createCMakeSources targetRootDir g4mod = do
-  let sources = generateCMakeSources g4mod
+releaseAbla :: FilePath -> (String -> IO String) -> G4Module -> IO ()
+releaseAbla targetRootDir transform g4module = do
+  createDirectoryIfMissing True targetRootDir
+  let modDir = g4moduleDir g4module
+      headers = g4moduleHeaders g4module
+      sources = g4moduleSources g4module
+  createDirectoryIfMissing True (targetRootDir </> modDir </> "include")
+  createDirectoryIfMissing True (targetRootDir </> modDir </> "src")
+  mapM_ (releaseFile (targetRootDir </> modDir </> "include") transform) headers
+  mapM_ (releaseFile (targetRootDir </> modDir </> "src") transform) sources
+  createCMakeSources targetRootDir "abla" g4module
+
+createCMakeSources :: FilePath -> String -> G4Module -> IO ()
+createCMakeSources targetRootDir suffix g4mod = do
+  let sources = generateCMakeSources suffix g4mod
       fname = targetRootDir </> (g4moduleDir g4mod) </> "sources.cmake"
   writeFile fname sources
 
@@ -157,19 +184,20 @@ defaultGranDeps = ["G4baryons", "G4bosons", "G4geometrymng",
                    "G4materials", "G4mesons", "G4partman",
                    "G4procman", "G4track", "G4volumes"]
 
-mkModuleDefinition :: FilePath -> FilePath -> String -> [G4Module] -> IO G4Module
-mkModuleDefinition basedir pkgdir pkgname granularDeps = do
+mkModuleDefinition :: FilePath -> FilePath -> String -> String -> [G4Module] -> IO G4Module
+mkModuleDefinition basedir pkgdir codename pkgname granularDeps = do
   let  name = pkgname
+       cname = codename
   moduleFiles <- getRecursiveContents (basedir </> pkgdir)
   let headers = headerFilesOnly moduleFiles
       sources = sourceFilesOnly moduleFiles
       granDeps = concat [defaultGranDeps, (map g4moduleName granularDeps)]
       globDeps = defaultGlobDeps
-      newModule = G4Module name pkgdir headers sources granDeps globDeps
+      newModule = G4Module cname name pkgdir headers sources granDeps globDeps
   return newModule
 
-generateCMakeSources :: G4Module -> String
-generateCMakeSources g4mod = concat [sourcesCMakeHeader,
+generateCMakeSources :: String -> G4Module -> String
+generateCMakeSources suffix g4mod = concat [sourcesCMakeHeader,
                                      "GEANT4_DEFINE_MODULE(NAME " ++ moduleName ++ "\n",
                                      headerDefs,
                                      "\n",
@@ -180,7 +208,7 @@ generateCMakeSources g4mod = concat [sourcesCMakeHeader,
                                      globalDepDefs,
                                      "\n",
                                      sourcesCMakeEnd]
-  where moduleName = "G4hadronic_inclxx_" ++ (g4moduleName g4mod)
+  where moduleName = "G4hadronic_" ++ suffix ++ "_" ++ (g4moduleName g4mod)
         appendEndl fname = "        " ++ fname ++ "\n"
         headerFiles = map takeFileName (g4moduleHeaders g4mod)
         headerFilesWithEndl = concat $ map appendEndl headerFiles
